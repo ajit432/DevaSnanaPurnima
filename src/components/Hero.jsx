@@ -56,25 +56,30 @@ const Hero = () => {
     hero.addEventListener('touchmove', move, { passive: true })
     hero.addEventListener('touchend', leave)
 
-    // Audio Playback handling (autoplay bypass)
-    const playAudio = () => {
-      if (audioRef.current) {
-        audioRef.current.play().catch(() => {
-          // Silent catch for browser autoplay protection
-        })
+    // Audio Playback handling (using static muted autoplay + interaction unmute)
+    const audio = audioRef.current
+    if (audio) {
+      console.log("[Audio Debug] Audio element found. Setting up interaction-based unmute listener...");
+      
+      const unmute = () => {
+        console.log("[Audio Debug] User interaction detected. Unmuting and ensuring playback...");
+        audio.muted = false
+        audio.play()
+          .then(() => console.log("[Audio Debug] Playback active and unmuted."))
+          .catch((err) => console.error("[Audio Debug] Playback failed to unmute:", err))
+        cleanupListeners()
       }
+      
+      const cleanupListeners = () => {
+        window.removeEventListener('click', unmute)
+        window.removeEventListener('touchstart', unmute)
+        window.removeEventListener('keydown', unmute)
+      }
+
+      window.addEventListener('click', unmute)
+      window.addEventListener('touchstart', unmute)
+      window.addEventListener('keydown', unmute)
     }
-
-    playAudio()
-
-    const startOnInteraction = () => {
-      playAudio()
-      window.removeEventListener('click', startOnInteraction)
-      window.removeEventListener('touchstart', startOnInteraction)
-    }
-
-    window.addEventListener('click', startOnInteraction)
-    window.addEventListener('touchstart', startOnInteraction)
 
     return () => {
       hero.removeEventListener('mousemove', move)
@@ -82,8 +87,6 @@ const Hero = () => {
       hero.removeEventListener('touchstart', move)
       hero.removeEventListener('touchmove', move)
       hero.removeEventListener('touchend', leave)
-      window.removeEventListener('click', startOnInteraction)
-      window.removeEventListener('touchstart', startOnInteraction)
     }
   }, [])
 
@@ -112,6 +115,7 @@ const Hero = () => {
         src="/music/krishna_kalki_bgm.webm"
         loop
         autoPlay
+        muted
         style={{ display: 'none' }}
       />
 
